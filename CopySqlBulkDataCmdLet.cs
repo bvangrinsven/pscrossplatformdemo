@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Management.Automation;
 using System.Management.Automation.Runspaces;
+using pscrossdemo.Objects;
 using pscrossdemo.utils;
 
 namespace pscrossdemo
@@ -14,7 +15,7 @@ namespace pscrossdemo
   {
     private JobStatus js = new JobStatus();
 
-    private ProgressRecord pgRec = new ProgressRecord(0, "Copying Data", "");
+    private ProgressRecord pgRec = new ProgressRecord(0, "Copying Data", "Starting Process");
 
     [Parameter(Mandatory = true)]
     public string SrcConnString { get; set; }
@@ -50,12 +51,9 @@ namespace pscrossdemo
       {
         js.SourceRowCount = GetRowCount(srcConn, SrcTable);
 
-        srcConn.Open();
-
         WriteVerbose("Opened the Connection");
 
-        SqlCommand cmd = new SqlCommand(string.Format("SELECT * FROM [{0}]", SrcTable), srcConn);
-        var reader = cmd.ExecuteReader();
+        var reader = srcConn.GetDataReader(string.Format("SELECT * FROM [{0}]", SrcTable));
 
         WriteVerbose("Ran the Datareader");
 
@@ -85,8 +83,9 @@ namespace pscrossdemo
             WriteVerbose("Defining the BulkCopyObject");
             sqlBulk.DestinationTableName = string.Format("[{0}]", DestTable);
 
-            if (MapColumns){                
-                CreateColumnMapping(srcConn, dstConn, SrcTable, DestTable, sqlBulk.ColumnMappings);
+            if (MapColumns)
+            {
+              CreateColumnMapping(srcConn, dstConn, SrcTable, DestTable, sqlBulk.ColumnMappings);
             }
 
             WriteVerbose("Starting the Data Transfer Process");
@@ -149,10 +148,17 @@ namespace pscrossdemo
 
     private void CreateColumnMapping(SqlConnection srcConn, SqlConnection destConn, string srcTableName, string destTableName, SqlBulkCopyColumnMappingCollection sqlBulkCopyColumnMappingCollection)
     {
-        for (int i = 0; i < sqlReader.FieldCount; i++)
+
+      List<SchemaProp> srcCols = Helpers.DataTableSchemaProp(srcConn.GetDataTable(Helpers.GetSchemaFromDB(srcTableName)));
+      List<SchemaProp> destCols = Helpers.DataTableSchemaProp(destConn.GetDataTable(Helpers.GetSchemaFromDB(destTableName)));
+
+      foreach (SchemaProp srcCol in srcCols)
+      {
+        if (destCols.FindIndex(x => x.ColumnName == srcCol.ColumnName) > 0)
         {
-            bulkCopy.ColumnMappings.Add(sqlReader.GetName(i), sqlReader.GetName(i));
+          sqlBulkCopyColumnMappingCollection.Add(srcCol.ColumnName, srcCol.ColumnName);
         }
+      }
     }
 
 
