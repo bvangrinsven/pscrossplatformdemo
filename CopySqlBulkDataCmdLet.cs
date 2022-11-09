@@ -86,6 +86,7 @@ namespace pscrossdemo
           {
             sqlBulk.SqlRowsCopied += OnReportSqlRowsCopied;
             sqlBulk.BulkCopyTimeout = 3600;
+            sqlBulk.EnableStreaming = true;
             sqlBulk.NotifyAfter = (int)((double)js.SourceRowCount * 0.05);
             sqlBulk.BatchSize = (int)((double)js.SourceRowCount * 0.001);
 
