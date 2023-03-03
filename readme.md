@@ -9,3 +9,18 @@ Copy-SqlBulkData -SrcConnString "Server=localhost;Database=lists;User Id=sa;Pass
 
 
 ```
+
+
+
+
+
+## Setting up the development project
+
+```powershell
+dotnet new -i Microsoft.PowerShell.Standard.Module.Template
+dotnet new psmodule
+dotnet build
+Import-Module "bin\Debug\netstandard2.0\$module.dll"
+Get-Module $module
+
+```
